@@ -83,6 +83,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int64_t sum[4] = {0}, sum2[4] = {0};
     int32_t pixelcount[4] = {0};
     int i, plane, vsub = desc->log2_chroma_h;
+    AVDictionary *tags = av_frame_get_metadata(frame);
+    AVDictionaryEntry *tag = NULL;
 
     for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
         int64_t linesize = av_image_get_linesize(frame->format, frame->width, plane);
@@ -126,7 +128,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
         av_log(ctx, AV_LOG_INFO, "%3.1f ",
                sqrt((sum2[plane] - sum[plane]*(double)sum[plane]/pixelcount[plane])/pixelcount[plane]));
-    av_log(ctx, AV_LOG_INFO, "\b]\n");
+    av_log(ctx, AV_LOG_INFO, "\b]");
+
+    while ((tag = av_dict_get(tags, "", tag, AV_DICT_IGNORE_SUFFIX)))
+         av_log(ctx, AV_LOG_INFO, " tag_%s:%s", tag->key, tag->value);
+    av_log(ctx, AV_LOG_INFO, "\n");
 
     for (i = 0; i < frame->nb_side_data; i++) {
         AVFrameSideData *sd = frame->side_data[i];
